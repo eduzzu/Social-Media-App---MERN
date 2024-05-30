@@ -2,6 +2,7 @@ import Post from "../models/Post.js";
 import User from "../models/User.js";
 
 /* CREATE */
+
 export const createPost = async (req, res) => {
   try {
     const { userId, description, picturePath } = req.body;
@@ -25,6 +26,19 @@ export const createPost = async (req, res) => {
     res.status(409).json({ message: err.message });
   }
 };
+
+/* DELETE */
+
+export const deletePost = async (req, res) => {
+  try{
+    const {userId, postId} = req.params;
+    await updateUserPosts(userId, postId, 'remove');
+    await Post.findByIdAndDelete(postId);
+    res.status(200).json({ message: "Post deleted successfully." });
+  } catch(error) {
+    res.status(500).json({message: error.message});
+  }
+}
 
 /* READ */
 export const getFeedPosts = async (req, res) => {
@@ -71,3 +85,22 @@ export const likePost = async (req, res) => {
     res.status(404).json({ message: err.message });
   }
 };
+
+export const updateUserPosts = async(userId, postId, action) => {
+  try {
+    let updateQuery;
+
+    if (action === 'add') {
+        updateQuery = { $addToSet: { posts: postId } };
+    } else if (action === 'remove') {
+        updateQuery = { $pull: { posts: postId } };
+    } else {
+        throw new Error('Invalid action specified');
+    }
+
+    await User.findOneAndUpdate({ _id: userId }, updateQuery);
+
+} catch(error) {
+    res.status(500).json({message: error.message});
+  }
+}
